@@ -1,0 +1,22 @@
+{% extends "server/base.html" %}
+{% set short = ref(agent.id) %}
+{% block title %}{{ t.text("activity.usage.title") }}{% endblock %}
+{% block top %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('activity.css') }}">{% endblock %}
+{% block body %}
+{# today's tokens - fresh input, cache hits and output - what they cost where the runtime says, the hits as a share of what was read, and a bar an hour of the viewer's day, each against the busiest; an hour without any is a stub, the hour now coloured #}
+{% set fresh = hours | sum(attribute="input") %}
+{% set cached = hours | sum(attribute="cached") %}
+{% set spent = hours | rejectattr("cost", "none") | map(attribute="cost") | list %}
+<div id="usage" class="card usage" data-topic="activity.agent" data-scope='{{ {"agent": short | string} | tojson }}' data-seen='{{ seen | tojson }}' hx-get="/ui/activity/usage/{{ short }}" hx-select="#usage" hx-target="#usage" hx-swap="outerHTML" hx-trigger="bazaar:change">
+  <div class="card-hd"><h3>{{ t.text("activity.usage.title") }}</h3><span class="more">{{ t.text("activity.usage.hourly") }}</span></div>
+  <div class="usage-big"><span class="val num">{{ (fresh + cached + hours | sum(attribute="output")) | tokens }}</span><span class="sub">tokens{% if spent %} · ${{ "%.2f" | format(spent | sum) }}{% endif %} · {{ t.text("activity.hits") }} {{ ((cached * 100 / (fresh + cached)) | round | int) if fresh + cached else 0 }}%</span></div>
+  <div class="bars">
+    {% for hour in hours %}
+    {% set used = hour.input + hour.cached + hour.output %}
+    <i class="{% if loop.index0 == current %}c{% elif not used %}z{% endif %}" style="height:{{ ((used * 100 / peak) | round | int) if used else 6 }}%"></i>
+    {% endfor %}
+  </div>
+  <div class="axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
+</div>
+{% endblock %}

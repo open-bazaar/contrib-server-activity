@@ -1,0 +1,52 @@
+{% extends "server/base.html" %}
+{% import "activity/macros.html" as m with context %}
+{% set short = ref(agent.id) %}
+{% block title %}{{ t.text("activity.live.title") }}{% endblock %}
+{% block top %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('activity.css') }}"><script src="{{ asset('activity.js') }}"></script>{% endblock %}
+{% block body %}
+{# a card a turn in progress: where it is and how long it has run, what set it off, the calls it made and what it is doing now, and what it used #}
+<div id="live" class="live" data-topic="activity.agent" data-scope='{{ {"agent": short | string} | tojson }}' data-seen='{{ seen | tojson }}' data-now="{{ now_ms }}" hx-get="/ui/activity/live/{{ short }}" hx-select="#live" hx-target="#live" hx-swap="outerHTML" hx-trigger="bazaar:change">
+  {% for turn in running %}
+  {% set message = messages.get((agent.id, turn.message_id)) %}
+  <div class="card live-turn">
+    <div class="turn-hd">
+      <span class="lantern work"></span>
+      <h3>{{ t.text("activity.live.title") }} {{ m.conversation(names.get(turn.thread_id)) }}</h3>
+      {% if turn.channel %}<span class="chip wide-only">{{ m.logo(turn.channel) }}{{ t.text("activity.kind." ~ (turn.target_kind or "dm")) }}</span>{% endif %}
+      <span class="clock">{{ m.icon("clock") }}<span data-since="{{ turn.started_ms }}">{{ (now_ms - turn.started_ms) | duration("timer") }}</span></span>
+    </div>
+    {% if message and message.name == "reminder.fired" %}
+    <div class="quote"><span class="ic">{{ m.icon("alarm-clock") }}</span><div><b>{{ t.text("activity.reminder") }}</b>{{ message.metadata.get("title") or "" }}</div></div>
+    {% elif message %}
+    {% set who = m.sender(message) %}
+    <div class="quote"><div class="av xs {{ who | tint }}">{{ who[:1] | upper }}</div><div><b>{{ who }}</b>{{ message.metadata.get("text") or "" }}</div></div>
+    {% endif %}
+    <div class="steps">
+      {% for step in steps.get(turn.turn_id, []) %}
+      <div class="step{% if not step.ended %} now{% elif step.failed %} bad{% endif %}">
+        <span class="k">{{ m.icon("check" if step.ended and not step.failed else "triangle-alert" if step.failed else "terminal") }}</span>
+        <span class="sx"><span class="w">{{ m.call(step.call) }}</span> <small>{{ m.about(step.call) }}{% if step.failed and step.error %} {{ step.error }}{% endif %}</small></span>
+        <span class="d">{% if not step.ended %}<span data-since="{{ step.at_ms }}">{{ (now_ms - step.at_ms) | duration("timer") }}</span>{% elif step.call.duration_ms is not none %}{{ step.call.duration_ms | duration("compact") }}{% endif %}</span>
+      </div>
+      {% endfor %}
+      {% if turn.step in ("reply", "thinking") %}
+      <div class="step now">
+        <span class="k">{{ m.icon("sparkles") }}</span>
+        <span class="sx">{{ t.text("activity.live." ~ turn.step) }}</span>
+        <span class="d"><span data-since="{{ turn.step_ms }}">{{ (now_ms - turn.step_ms) | duration("timer") }}</span></span>
+      </div>
+      {% endif %}
+    </div>
+    <div class="turn-ft">
+      <span class="wide-only">{{ t.text("activity.live.this_turn") }} <b>{{ (turn.input + turn.cached) | tokens }}</b> {{ t.text("activity.input") }}</span>
+      <span class="narrow-only">{{ t.text("activity.input") }} <b>{{ (turn.input + turn.cached) | tokens }}</b></span>
+      <span class="wide-only"><b>{{ turn.output | tokens }}</b> {{ t.text("activity.output") }}</span>
+      <span class="narrow-only">{{ t.text("activity.output") }} <b>{{ turn.output | tokens }}</b></span>
+      <span>{{ t.text("activity.hits") }} <b>{{ m.hits(turn) }}</b></span>
+      <span class="tools"><span class="wide-only">{{ t.text("activity.live.called") }}</span><span class="narrow-only">{{ t.text("activity.live.tools") }}</span> <b>{{ turn.calls.total }}</b> {{ t.text("activity.times") }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

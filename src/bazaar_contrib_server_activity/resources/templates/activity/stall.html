@@ -1,0 +1,41 @@
+{% extends "server/base.html" %}
+{% import "activity/macros.html" as m with context %}
+{% block root %} class="goods-page"{% endblock %}
+{% block title %}{{ t.text("activity.stall.title") }}{% endblock %}
+{% block top %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('activity.css') }}">{% endblock %}
+{% block body %}
+{# the agents in a computer's stall: a line each with its lantern, its name, the logos of its channels and runtimes and how it is - at work and where for how long, idle since when and what it last did, or its computer away - beside the turns of its last seven days #}
+<div id="vendors" class="vendors" data-topic="activity.stall" data-scope='{{ {"computer": request.path_params["ref"]} | tojson }}' data-seen='{{ seen | tojson }}' hx-get="/ui/activity/stall/{{ request.path_params['ref'] }}" hx-select="#vendors" hx-target="#vendors" hx-swap="outerHTML" hx-trigger="bazaar:change">
+  {% for agent in agents %}
+  {% set turn = running.get(agent.id) %}
+  {% set last = latest.get(agent.id) %}
+  {% set state = "off" if not agent.online else "work" if turn else "fail" if agent.activity and agent.activity.state in ("failed", "blocked") else "on" %}
+  <a class="vendor{% if turn %} focus{% endif %}" href="/agents/{{ ref(agent.id) }}" target="_top">
+    <span class="lantern {{ state }}"></span>
+    <div class="who">
+      <div class="nm"><b>{{ agent.name }}</b>{% for kind in (agent.config.channel | map(attribute="kind") | unique) %}{{ m.logo(kind) }}{% endfor %}{% for kind in (agent.config.harness | map(attribute="kind") | unique) %}{{ m.logo(kind) }}{% endfor %}</div>
+      {% if not agent.online %}
+      <div class="doing">{{ t.text("activity.stall.away") }}</div>
+      {% elif turn %}
+      <div class="doing"><b>{{ t.text("activity.live.title") }}</b> {{ m.conversation(names.get(turn.thread_id)) }} · <span class="wide-only">{{ (now_ms - turn.started_ms) | duration }}</span><span class="narrow-only">{{ turn.started_ms | since }}</span></div>
+      {% elif last and last.name in ("channel.outbound.sent", "channel.outbound.partial", "channel.outbound.queued") %}
+      {% set asked = messages.get((agent.id, last.metadata.get("reply_to_message_id"))) %}
+      <div class="doing">{{ t.text("activity.idle") }} · {{ last.at_ms | ago }}<span class="wide-only">{{ t.text("activity.stall.in", {"where": m.conversation(names.get(last.thread_id)) | striptags}) }}</span>{{ t.text("activity.stall.replied_to" if asked else "activity.stall.replied", {"who": (m.sender(asked) | striptags) if asked else ""}) }}</div>
+      {% elif last %}
+      <div class="doing">{{ t.text("activity.idle") }} · {{ last.at_ms | ago }}</div>
+      {% else %}
+      <div class="doing">{{ t.text("activity.idle") }}</div>
+      {% endif %}
+    </div>
+    {# the turns of each six hours of the last seven days, against the busiest #}
+    {% set counts = spark[agent.id] %}
+    {% set top = [counts | max, 1] | max %}
+    {% set points = [] %}
+    {% for count in counts %}{% set _ = points.append(("%.1f %.1f" | format(loop.index0 * 84 / (counts | length - 1), 24 - count / top * 20))) %}{% endfor %}
+    {% set line = "M" ~ points | join(" L") %}
+    <svg class="spark wide-only{% if not agent.online %} dead{% elif not turn %} calm{% endif %}" viewBox="0 0 84 26" width="84" height="26" aria-hidden="true"><path class="fill" d="{{ line }} L84 26 L0 26 Z"/><path class="line" d="{{ line }}"/></svg>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}
