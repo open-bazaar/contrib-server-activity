@@ -1,0 +1,76 @@
+{% import "activity/macros.html" as m with context %}
+{% set short = ref(agent.id) %}
+{# the record follows the agent from its oldest line shown on: a change draws every line from there again, the newest at the top; a page further down moves where that is #}
+{% set oldest = events[-1].id if events else none %}
+{% set following = "/ui/activity/log/" ~ short ~ "/rows?filter=" ~ chosen ~ ("&start=" ~ oldest if oldest else "") %}
+{% if day is none %}<span id="follow" hidden data-topic="activity.agent" data-scope='{{ {"agent": short | string} | tojson }}' data-seen='{{ seen | tojson }}' hx-get="{{ following }}" hx-target="#rows" hx-swap="innerHTML" hx-trigger="bazaar:change"></span>
+{% elif oldest %}<span id="follow" hx-swap-oob="true" hidden data-topic="activity.agent" data-scope='{{ {"agent": short | string} | tojson }}' data-seen='{{ seen | tojson }}' hx-get="{{ following }}" hx-target="#rows" hx-swap="innerHTML" hx-trigger="bazaar:change"></span>{% endif %}
+{% set kept = namespace(day=day) %}
+{% for event in events %}
+{% set source = sources[event.name] %}
+{% set named = names.get(event.thread_id) %}
+{% set turn = turns.get((agent.id, event.turn_id)) %}
+{% set when = event.at_ms | dated %}
+{% if when != kept.day %}<div class="lday">{{ when }}</div>{% set kept.day = when %}{% endif %}
+<div class="ev{% if event.name in failures %} bad{% endif %}" x-data="{ open: false }">
+  <span class="tm">{{ (event.at_ms | time)[:5] }}</span>
+  <span class="src {{ source }}">{{ t.text("activity.source." ~ source) }}</span>
+  {% if event.name in ("harness.turn.requested", "runtime.request.turn.started") %}
+  <span class="w">{{ t.text("activity.log.started") }} <b>{{ m.conversation(named) }}</b></span>
+  <span class="d">{{ models.get(event.context.get("connection")) or "" }}</span><span class="mt"></span>
+  {% elif event.name in ("harness.completed", "runtime.turn.completed") %}
+  <span class="w">{{ t.text("activity.log.completed") }} · <b>{{ m.conversation(named) }}</b></span>
+  <span class="d"></span><span class="mt">{% if turn and turn.ended_ms %}{{ (turn.ended_ms - turn.started_ms) | duration }} · {{ t.text("activity.input") }} {{ (turn.input + turn.cached) | tokens }} · {{ t.text("activity.output") }} {{ turn.output | tokens }} · {{ t.text("activity.hits") }} {{ m.hits(turn) }}{% if turn.calls.total %} · {{ t.text("activity.log.tools", {"n": turn.calls.total}) }}{% endif %}{% endif %}</span>
+  {% elif event.name in ("harness.cancelled", "runtime.turn.cancelled") %}
+  <span class="w">{{ t.text("activity.log.cancelled") }} · <b>{{ m.conversation(named) }}</b></span>
+  <span class="d"></span><span class="mt"></span>
+  {% elif event.name in ("harness.failed", "runtime.turn.failed", "runtime.turn.unknown") %}
+  <span class="w">{{ m.icon("triangle-alert") }}{{ t.text("activity.log.failed") }} · <b>{{ m.conversation(named) }}</b></span>
+  <span class="d">{{ event.error or "" }}</span><span class="mt"></span>
+  {% elif event.name == "channel.inbound.persisted" %}
+  {% set grouped = named is not none and named.kind == "group" %}
+  <span class="w">{{ t.text("activity.log.received") }} <b>{{ m.sender(event) }}</b>{% if grouped %}<span class="wide-only"> {{ t.text("activity.log.in") }} <b>{{ m.conversation(named) }}</b></span>{% endif %} {{ t.text("activity.log.message") }}</span>
+  <span class="d">{% if grouped %}<span class="narrow-only">{{ m.conversation(named) }} · </span>{% endif %}“{{ event.metadata.get("text") or "" }}”</span><span class="mt"></span>
+  {% elif event.name in ("channel.outbound.sent", "channel.outbound.partial", "channel.outbound.queued") %}
+  <span class="w">{{ t.text("activity.log.replied") }} <b>{{ m.conversation(named) }}</b></span>
+  <span class="d">“{{ event.metadata.get("text") or "" }}”</span><span class="mt"></span>
+  {% elif event.name in ("channel.outbound.failed", "channel.outbound.unknown") %}
+  <span class="w">{{ m.icon("triangle-alert") }}{{ t.text("activity.log.unsent") }} · <b>{{ m.conversation(named) }}</b></span>
+  <span class="d">{{ event.error or "" }}</span><span class="mt"></span>
+  {% elif event.name == "channel.connection.connected" %}
+  {% set identity = event.payload.get("identity") or {} %}
+  <span class="w">{{ m.logo(event.context.get("channel")) }}{{ t.text("activity.log.reconnected" if event.id in back else "activity.log.connected") }}</span>
+  <span class="d">{{ identity.get("name") or identity.get("id") or "" }}</span><span class="mt"></span>
+  {% elif event.name == "channel.connection.failed" %}
+  {% set retry = event.payload.get("retry_in_ms") %}
+  <span class="w">{{ m.icon("triangle-alert") }}{{ m.logo(event.context.get("channel")) }}{{ t.text("activity.log.disconnected") }}</span>
+  <span class="d">{% if event.error %}{{ event.error }} · {% endif %}{{ t.text("activity.log.retry", {"n": (retry / 1000) | round | int}) if retry is not none else t.text("activity.log.given_up") }}</span><span class="mt"></span>
+  {% elif event.name in ("harness.tool.completed", "harness.tool.failed") and calls.get(event.id) %}
+  {% set call = calls[event.id] %}
+  {% set detail = call.detail %}
+  <span class="w">{% if event.name == "harness.tool.failed" %}{{ m.icon("triangle-alert") }}{% endif %}{{ m.call(call) }}</span>
+  <span class="d">{{ m.about(call) }}{% if event.name == "harness.tool.failed" and event.error %} {{ event.error }}{% endif %}{% if event.omitted %} · {{ t.text("activity.log.omitted") }}{% endif %}</span>
+  <span class="mt">{%- if detail.kind == "command" and detail.exit_code is not none %}{{ t.text("activity.log.exit", {"code": detail.exit_code}) }}{% endif %}
+    {%- if detail.kind == "command" and detail.exit_code is not none and call.duration_ms is not none %} · {% endif %}
+    {%- if detail.kind == "command" and call.duration_ms is not none %}{{ call.duration_ms | duration }}{% endif %}
+    {%- if detail.kind == "command" and detail.output and not event.omitted %}<button class="tog" type="button" @click="open = !open" hx-get="/ui/activity/output/{{ short }}/{{ event.id }}" hx-trigger="click once" hx-target="#out-{{ event.id }}" hx-swap="innerHTML">{{ t.text("activity.log.output") }}{{ m.icon("chevron-right") }}</button>{% endif -%}
+  </span>
+  {% if detail.kind == "command" and detail.output %}<pre class="out" id="out-{{ event.id }}" x-show="open" x-cloak></pre>{% endif %}
+  {% elif event.name in ("harness.tool.completed", "harness.tool.failed", "tool_call.completed", "tool_call.failed") %}
+  {# a call 0.2 kept by its name, or one whose start is gone too #}
+  <span class="w">{% if event.name.endswith(".failed") %}{{ m.icon("triangle-alert") }}{% endif %}{{ t.text("activity.call.tool") }} <code>{{ event.metadata.get("name") or "—" }}</code></span>
+  <span class="d">{% if event.omitted %}{{ t.text("activity.log.omitted") }}{% endif %}</span><span class="mt"></span>
+  {% elif event.name == "harness.pool.banned" %}
+  {% set banned = event.context.get("connection") %}
+  {% set fallback = event.payload.get("fallback") %}
+  <span class="w">{{ m.icon("triangle-alert") }}{{ t.text("activity.log.banned_to" if fallback else "activity.log.banned", {"from": models.get(banned) or banned or "—", "to": models.get(fallback) or fallback}) }}</span>
+  <span class="d">{{ m.conversation(named) }}</span><span class="mt"></span>
+  {% elif event.name == "reminder.fired" %}
+  <span class="w">{{ t.text("activity.reminder") }}<span class="wide-only"> · {{ event.metadata.get("title") or "" }}</span></span>
+  <span class="d"><span class="narrow-only">{{ event.metadata.get("title") or "" }} · </span>{{ m.conversation(named) }}</span><span class="mt"></span>
+  {% endif %}
+</div>
+{% else %}
+{% if day is none %}<p class="none">{{ t.text("activity.log.none") }}</p>{% endif %}
+{% endfor %}
+{% if more %}<div class="log-ft"><button class="btn sm" type="button" hx-get="/ui/activity/log/{{ short }}/rows?filter={{ chosen }}&before={{ oldest }}&day={{ kept.day | urlencode }}" hx-target="closest .log-ft" hx-swap="outerHTML">{{ t.text("activity.log.earlier") }}</button></div>{% endif %}

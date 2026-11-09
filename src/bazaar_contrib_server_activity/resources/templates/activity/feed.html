@@ -1,0 +1,40 @@
+{% extends "server/base.html" %}
+{% import "activity/macros.html" as m with context %}
+{% block title %}{{ t.text("activity.feed.title") }}{% endblock %}
+{% block top %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('activity.css') }}"><script src="{{ asset('activity.js') }}"></script>{% endblock %}
+{% block body %}
+{# the market's feed: what the agents and computers the account sees did lately, newest first, as many as the card holds; who did it in bold and how long ago #}
+<div id="feed" class="card feedcard" data-fill data-topic="activity.feed" data-seen='{{ seen | tojson }}' hx-get="/ui/activity/feed" hx-select="#feed" hx-target="#feed" hx-swap="outerHTML" hx-trigger="bazaar:change">
+  <div class="card-hd"><h3>{{ t.text("activity.feed.title") }}</h3></div>
+  <div class="feed">
+    {% for item in items %}
+    {% set event = item.event %}
+    {% if event is none %}
+    <div class="feed-item"><span class="dot r">{{ m.icon("wifi-off") }}</span><span class="tx"><b>{{ item.computer }}</b> {{ t.text("activity.feed.left") }}</span><span class="t">{{ item.at_ms | since }}</span></div>
+    {% elif item.agent is not none %}
+    {% set agent = item.agent %}
+    {% set named = names.get(event.thread_id) %}
+    {% if event.name in ("harness.turn.requested", "runtime.request.turn.started") %}
+    <div class="feed-item"><span class="dot s">{{ m.icon("zap") }}</span><span class="tx"><b>{{ agent.name }}</b> {{ t.text("activity.feed.started", {"where": m.conversation(named) | striptags}) }}</span><span class="t">{{ item.at_ms | since }}</span></div>
+    {% elif event.name.startswith("channel.outbound.") %}
+    {% set asked = messages.get((agent.id, event.metadata.get("reply_to_message_id"))) %}
+    <div class="feed-item"><span class="dot j">{{ m.icon("send") }}</span><span class="tx"><b>{{ agent.name }}</b> {{ t.text("activity.feed.replied_to" if asked else "activity.feed.replied", {"where": m.conversation(named) | striptags, "who": (m.sender(asked) | striptags) if asked else ""}) }}</span><span class="t">{{ item.at_ms | since }}</span></div>
+    {% elif event.name == "channel.inbound.persisted" %}
+    {% if named is not none and named.kind == "group" %}
+    <div class="feed-item"><span class="dot b">{{ m.icon("users") }}</span><span class="tx"><b>{{ m.conversation(named) }}</b> {{ t.text("activity.feed.invites", {"agent": agent.name}) }}</span><span class="t">{{ item.at_ms | since }}</span></div>
+    {% else %}
+    <div class="feed-item"><span class="dot b">{{ m.icon("user-plus") }}</span><span class="tx"><b>{{ m.sender(event) }}</b> {{ t.text("activity.feed.asks", {"agent": agent.name}) }}</span><span class="t">{{ item.at_ms | since }}</span></div>
+    {% endif %}
+    {% elif event.name == "reminder.fired" %}
+    <div class="feed-item"><span class="dot p">{{ m.icon("alarm-clock") }}</span><span class="tx"><b>{{ agent.name }}</b>{{ t.text("activity.feed.reminded", {"title": event.metadata.get("title") or ""}) }}</span><span class="t">{{ item.at_ms | since }}</span></div>
+    {% elif turns.get((agent.id, event.turn_id)) %}
+    <div class="feed-item"><span class="dot s">{{ m.icon("terminal") }}</span><span class="tx"><b>{{ agent.name }}</b> {{ m.calls(turns[(agent.id, event.turn_id)].calls) }}</span><span class="t">{{ item.at_ms | since }}</span></div>
+    {% endif %}
+    {% endif %}
+    {% else %}
+    <p class="none">{{ t.text("activity.feed.none") }}</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

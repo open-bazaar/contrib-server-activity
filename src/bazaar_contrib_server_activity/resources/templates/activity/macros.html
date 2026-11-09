@@ -1,0 +1,71 @@
+{# a plugin's logo, standing for its name; a puzzle piece for a kind without one #}
+{% macro logo(kind) %}<span class="g {{ kind }}">{% include ["activity/logos/" ~ kind ~ ".svg", "activity/icons/puzzle.svg"] %}</span>{% endmacro %}
+
+{% macro icon(name) %}{% include "activity/icons/" ~ name ~ ".svg" %}{% endmacro %}
+
+{# what a conversation is called: a group by its name, a private one as who it is with #}
+{% macro conversation(named) -%}
+{% if named is none %}{{ t.text("activity.conversation") }}
+{%- elif named.kind == "group" %}{{ named.name or t.text("activity.kind.group") }}
+{%- elif named.name %}{{ t.text("activity.dm", {"name": named.name}) }}
+{%- else %}{{ t.text("activity.kind.dm") }}{% endif %}
+{%- endmacro %}
+
+{# who sent a message that came in #}
+{% macro sender(event) -%}
+{% set who = event.metadata.get("sender") or {} %}{{ who.get("display_name") or who.get("name") or who.get("id") or "—" }}
+{%- endmacro %}
+
+{# the cache hits as a share of all a turn read: the fresh input and the hits #}
+{% macro hits(turn) -%}
+{{ ((turn.cached * 100 / (turn.input + turn.cached)) | round | int) if turn.input + turn.cached else 0 }}%
+{%- endmacro %}
+
+{# a turn's calls in a receipt's words, kinds never called left out #}
+{% macro calls(counted) -%}
+{% set said = [] %}
+{% for kind in ("commands", "files", "changes", "pages", "searches", "tools", "tasks") %}
+{% set n = counted[kind] %}
+{% if n %}{% set _ = said.append(t.text("activity.calls." ~ kind, {"n": n})) %}{% endif %}
+{% endfor %}
+{{- said | join(t.text("activity.calls.and")) -}}
+{%- endmacro %}
+
+{# a call's arguments in short: each at the top as key=value, strings quoted, anything deeper as …; its line cuts what is long #}
+{% macro arguments(given) -%}
+{%- if given is mapping -%}
+{%- set said = [] -%}
+{%- for key, value in given.items() -%}
+{%- set _ = said.append(key ~ "=" ~ (('"' ~ value ~ '"') if value is string else "…" if value is mapping or (value is iterable and value is not string) else (value | tojson))) -%}
+{%- endfor -%}
+{{ said | join(" ") }}
+{%- elif given is not none %}{{ given | tojson }}
+{%- endif -%}
+{%- endmacro %}
+
+{# what a call does, by its kind: a verb, then what it acts on; a command that only reads, lists or searches is the files it looks at #}
+{% macro call(call) -%}
+{%- set detail = call.detail -%}
+{%- if detail.kind == "command" and detail.actions and not (detail.actions | rejectattr("kind", "in", ["read", "list", "search"]) | list) -%}
+{%- for action in detail.actions %}<span class="vb">{{ t.text("activity.file." ~ action.kind) }}</span> <code>{{ action.path or action.query or action.command }}</code>{% if not loop.last %} {% endif %}{% endfor -%}
+{%- elif detail.kind == "command" %}<span class="vb">{{ t.text("activity.call.command") }}</span> {% for action in detail.actions %}<code>{{ action.command }}</code>{% if not loop.last %} {% endif %}{% else %}<code>{{ detail.command }}</code>{% endfor -%}
+{%- elif detail.kind == "file" %}<span class="vb">{{ t.text("activity.file." ~ detail.action) }}</span> <code>{{ detail.path or detail.query or "—" }}</code>
+{%- elif detail.kind == "change" %}<span class="vb">{{ t.text("activity.call.change") }}</span> {% for changed in detail.changes %}<code>{{ changed.path }}</code>{% if not loop.last %} {% endif %}{% endfor -%}
+{%- elif detail.kind == "web" and detail.action == "open" %}<span class="vb">{{ t.text("activity.call.open") }}</span> <code>{{ detail.url or "—" }}</code>
+{%- elif detail.kind == "web" %}<span class="vb">{{ t.text("activity.call.search") }}</span> <code>{{ detail.query or detail.url or "—" }}</code>
+{%- elif detail.kind == "mcp" %}<span class="vb">{{ t.text("activity.call.tool") }}</span> <code>{{ detail.server }} / {{ detail.tool }}</code>
+{%- elif detail.kind == "agent" %}<span class="vb">{{ t.text("activity.call.agent") }}</span> <span>{{ detail.description or "—" }}</span>
+{%- else %}<span class="vb">{{ t.text("activity.call.tool") }}</span> <code>{{ detail.name }}</code>
+{%- endif -%}
+{%- endmacro %}
+
+{# what is said under a call: a command's description and the last part of where it ran, a looking command's text, a page searched, the arguments of a tool #}
+{% macro about(call) -%}
+{%- set detail = call.detail -%}
+{%- if detail.kind == "command" and detail.actions and not (detail.actions | rejectattr("kind", "in", ["read", "list", "search"]) | list) %}{{ detail.command }}
+{%- elif detail.kind == "command" %}{{ detail.description or "" }}{% if detail.description and detail.cwd %} · {% endif %}{% if detail.cwd %}<span class="mono">{{ detail.cwd.replace("\\", "/").rstrip("/").split("/")[-1] }}</span>{% endif %}
+{%- elif detail.kind == "web" and detail.action == "find" %}{{ detail.url or "" }}
+{%- elif detail.kind == "mcp" %}<span class="mono">{{ arguments(detail.arguments) }}</span>
+{%- elif detail.kind == "other" %}<span class="mono">{{ arguments(detail.input) }}</span>
+{%- endif -%}
+{%- endmacro %}

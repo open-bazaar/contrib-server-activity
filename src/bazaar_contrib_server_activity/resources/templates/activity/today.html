@@ -1,0 +1,34 @@
+{% extends "server/base.html" %}
+{% import "activity/macros.html" as m with context %}
+{% set short = ref(agent.id) %}
+{% block title %}{{ t.text("activity.today.title") }}{% endblock %}
+{% block top %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('activity.css') }}"><script src="{{ asset('activity.js') }}"></script>{% endblock %}
+{% block body %}
+{# today's turns, newest first: when, from where, what set each off, how it went - done, failed, cancelled or still running - how long and how many tokens; as many as the card holds on a wide screen, the newest three on a phone #}
+<div id="today" class="card today" data-fill data-topic="activity.agent" data-scope='{{ {"agent": short | string} | tojson }}' data-seen='{{ seen | tojson }}' hx-get="/ui/activity/today/{{ short }}" hx-select="#today" hx-target="#today" hx-swap="outerHTML" hx-trigger="bazaar:change">
+  <div class="card-hd">
+    <h3>{{ t.text("activity.today.title") }}</h3>
+    <span class="sub">{{ t.text("activity.today.turns", {"n": total}) }}{% if failed %} · {{ t.text("activity.today.failed", {"n": failed}) }}{% endif %}</span>
+    <a class="more" href="/ui/agents/{{ short }}?tab=log" target="_parent">{{ t.text("activity.log.title") }}{{ m.icon("chevron-right") }}</a>
+  </div>
+  <div class="turns">
+    {% for turn in turns %}
+    {% set message = messages.get((agent.id, turn.message_id)) %}
+    {% set reminded = message and message.name == "reminder.fired" %}
+    <div class="turn">
+      <span class="tm">{{ turn.started_ms | stamp }}</span>
+      <span class="where">{% if reminded %}{{ m.icon("alarm-clock") }}{{ t.text("activity.reminder") }}{% else %}{% if turn.channel %}{{ m.logo(turn.channel) }}{% endif %}<span class="nm">{{ m.conversation(names.get(turn.thread_id)) }}</span>{% endif %}</span>
+      <span class="what">{% if reminded %}{{ message.metadata.get("title") or "" }}{% elif message %}{{ message.metadata.get("text") or "" }}{% endif %}</span>
+      {% if turn.outcome == "completed" %}<span class="ok">{{ m.icon("circle-check") }}{{ t.text("activity.done") }}</span>
+      {% elif turn.outcome == "cancelled" %}<span class="off">{{ t.text("activity.cancelled") }}</span>
+      {% elif turn.outcome %}<span class="bad">{{ m.icon("triangle-alert") }}{{ t.text("activity.failed") }}</span>
+      {% else %}<span class="run">{{ t.text("activity.running") }}</span>{% endif %}
+      <span class="nums"><span class="dur">{{ ((turn.ended_ms or now_ms) - turn.started_ms) | duration("compact") }}</span><span class="sep"> · </span><span class="tok">{{ (turn.input + turn.cached + turn.output) | tokens }}</span></span>
+    </div>
+    {% else %}
+    <p class="none">{{ t.text("activity.today.none") }}</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
