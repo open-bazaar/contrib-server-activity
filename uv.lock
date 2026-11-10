@@ -141,7 +141,7 @@ wheels = [
 
 [[package]]
 name = "bazaar-contrib-server-activity"
-version = "0.3.0rc1"
+version = "0.3.0rc2"
 source = { editable = "." }
 dependencies = [
     { name = "bazaar-contrib-audit" },

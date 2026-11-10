@@ -1,6 +1,6 @@
 [project]
 name = "bazaar-contrib-server-activity"
-version = "0.3.0rc1"
+version = "0.3.0rc2"
 description = "The activity of the Bazaar Compute server: what the computers report, kept once, the turns and usage it adds up to, and the pages that show them"
 readme = "README.md"
 license = "Apache-2.0"
