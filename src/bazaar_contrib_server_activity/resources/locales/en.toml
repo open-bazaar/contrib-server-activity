@@ -65,6 +65,7 @@
 "activity.log.omitted" = "too large to report"
 "activity.log.none" = "Nothing recorded yet"
 "activity.log.earlier" = "Load earlier"
+"activity.log.latest" = "Back to the latest"
 "activity.filter.all" = "All"
 "activity.filter.turns" = "Turns"
 "activity.filter.channel" = "Channels"

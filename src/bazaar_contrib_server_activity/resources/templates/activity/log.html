@@ -14,6 +14,8 @@
     <h3>{{ t.text("activity.log.title") }}</h3>
     <nav class="seg">{{ narrowing("") }}</nav>
   </div>
+  {# opened at a turn, the record starts at its newest line; the latest is a click away #}
+  {% if opened %}<div class="log-at"><a class="btn sm" href="/ui/activity/log/{{ short }}?filter={{ chosen }}">{{ m.icon("chevron-up") }}{{ t.text("activity.log.latest") }}</a></div>{% endif %}
   <div id="rows">{% include "activity/rows.html" %}</div>
 </div>
 {% endblock %}

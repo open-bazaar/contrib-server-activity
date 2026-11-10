@@ -125,7 +125,11 @@ async def serving(retention_days: int = 30) -> AsyncIterator[Served]:
                     ]
                 case "receipts":
                     value = {
-                        message: [asdict(receipt.calls), receipt.seconds]
+                        message: [
+                            asdict(receipt.calls),
+                            receipt.seconds,
+                            receipt.turn_id,
+                        ]
                         for message, receipt in (
                             await activity.receipts(
                                 account, query["agent"], query.getlist("message")

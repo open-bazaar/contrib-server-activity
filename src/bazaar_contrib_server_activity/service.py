@@ -162,7 +162,7 @@ class Service:
             else:
                 if event.message_id in wanted:
                     receipts[event.message_id or ""] = Receipt(
-                        calls, max(0, event.at_ms - at) // 1000
+                        calls, max(0, event.at_ms - at) // 1000, turn_id
                     )
                 last[turn_id] = (event.at_ms, Calls())
         return receipts

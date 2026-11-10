@@ -1,10 +1,10 @@
 {% import "activity/macros.html" as m with context %}
 {% set short = ref(agent.id) %}
-{# the record follows the agent from its oldest line shown on: a change draws every line from there again, the newest at the top; a page further down moves where that is #}
+{# the record follows the agent from its oldest line shown on: a change draws every line from there again, the newest at the top; a page further down moves where that is. One opened at a turn stays where it was opened #}
 {% set oldest = events[-1].id if events else none %}
 {% set following = "/ui/activity/log/" ~ short ~ "/rows?filter=" ~ chosen ~ ("&start=" ~ oldest if oldest else "") %}
-{% if day is none %}<span id="follow" hidden data-topic="activity.agent" data-scope='{{ {"agent": short | string} | tojson }}' data-seen='{{ seen | tojson }}' hx-get="{{ following }}" hx-target="#rows" hx-swap="innerHTML" hx-trigger="bazaar:change"></span>
-{% elif oldest %}<span id="follow" hx-swap-oob="true" hidden data-topic="activity.agent" data-scope='{{ {"agent": short | string} | tojson }}' data-seen='{{ seen | tojson }}' hx-get="{{ following }}" hx-target="#rows" hx-swap="innerHTML" hx-trigger="bazaar:change"></span>{% endif %}
+{% if day is none and not opened %}<span id="follow" hidden data-topic="activity.agent" data-scope='{{ {"agent": short | string} | tojson }}' data-seen='{{ seen | tojson }}' hx-get="{{ following }}" hx-target="#rows" hx-swap="innerHTML" hx-trigger="bazaar:change"></span>
+{% elif oldest and not opened %}<span id="follow" hx-swap-oob="true" hidden data-topic="activity.agent" data-scope='{{ {"agent": short | string} | tojson }}' data-seen='{{ seen | tojson }}' hx-get="{{ following }}" hx-target="#rows" hx-swap="innerHTML" hx-trigger="bazaar:change"></span>{% endif %}
 {% set kept = namespace(day=day) %}
 {% for event in events %}
 {% set source = sources[event.name] %}
@@ -12,7 +12,7 @@
 {% set turn = turns.get((agent.id, event.turn_id)) %}
 {% set when = event.at_ms | dated %}
 {% if when != kept.day %}<div class="lday">{{ when }}</div>{% set kept.day = when %}{% endif %}
-<div class="ev{% if event.name in failures %} bad{% endif %}" x-data="{ open: false }">
+<div class="ev{% if event.name in failures %} bad{% endif %}{% if opened and event.turn_id == opened %} at{% endif %}" x-data="{ open: false }">
   <span class="tm">{{ (event.at_ms | time)[:5] }}</span>
   <span class="src {{ source }}">{{ t.text("activity.source." ~ source) }}</span>
   {% if event.name in ("harness.turn.requested", "runtime.request.turn.started") %}
@@ -73,4 +73,4 @@
 {% else %}
 {% if day is none %}<p class="none">{{ t.text("activity.log.none") }}</p>{% endif %}
 {% endfor %}
-{% if more %}<div class="log-ft"><button class="btn sm" type="button" hx-get="/ui/activity/log/{{ short }}/rows?filter={{ chosen }}&before={{ oldest }}&day={{ kept.day | urlencode }}" hx-target="closest .log-ft" hx-swap="outerHTML">{{ t.text("activity.log.earlier") }}</button></div>{% endif %}
+{% if more %}<div class="log-ft"><button class="btn sm" type="button" hx-get="/ui/activity/log/{{ short }}/rows?filter={{ chosen }}&before={{ oldest }}&day={{ kept.day | urlencode }}{% if opened %}&turn={{ opened | urlencode }}{% endif %}" hx-target="closest .log-ft" hx-swap="outerHTML">{{ t.text("activity.log.earlier") }}</button></div>{% endif %}

@@ -72,10 +72,12 @@ class Turn:
 @dataclass(frozen=True, slots=True)
 class Receipt:
     """What a turn did before one of its replies, since the reply before
-    it or its start: its tool calls and how many seconds that took."""
+    it or its start: its tool calls and how many seconds that took, and
+    which turn it was, for a link to it."""
 
     calls: Calls
     seconds: int
+    turn_id: str
 
 
 @dataclass(frozen=True, slots=True)

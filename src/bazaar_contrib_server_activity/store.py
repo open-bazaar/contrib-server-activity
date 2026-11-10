@@ -534,6 +534,27 @@ class Store:
         )
         return [event(row) for row in rows]
 
+    async def newest(
+        self, computer_id: str, agent_id: str, names: Sequence[str], turn_id: str
+    ) -> int | None:
+        """The id of the turn's newest event of the names; nothing when it
+        has none."""
+        (row,) = await self._select(
+            Select(
+                table="events",
+                columns={"id": Call(name="max", arguments=(Column(name="id"),))},
+                where=All(
+                    conditions=(
+                        equals("computer_id", computer_id),
+                        equals("agent_id", agent_id),
+                        equals("turn_id", turn_id),
+                        In(expression=Column(name="event_name"), values=tuple(names)),
+                    )
+                ),
+            )
+        )
+        return cast(int | None, row["id"])
+
     async def connections(
         self, computer_id: str, agent_id: str, until: int
     ) -> list[Event]:

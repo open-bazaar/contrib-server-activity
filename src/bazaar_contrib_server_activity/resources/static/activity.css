@@ -101,6 +101,11 @@ code { font: 12px var(--font-mono); color: var(--text); background: var(--sunken
 .ev .tog { display: inline-flex; align-items: center; gap: 2px; padding: 0; border: 0; background: none; font: 600 12px/17px var(--font-ui); color: var(--text-2); cursor: pointer; }
 .ev .tog svg { width: 14px; height: 14px; }
 .ev.bad .w { color: var(--crimson); }
+/* the turn the record was opened at */
+.ev.at { background: color-mix(in srgb, var(--saffron) 6%, transparent); }
+.log-at { display: flex; justify-content: center; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+.log-at .btn { line-height: 18px; text-decoration: none; }
+.log-at .btn svg { width: 13px; height: 13px; position: relative; top: -1px; }
 .ev .out { grid-column: 1 / -1; max-height: 320px; overflow: auto; margin: 2px 0 10px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--sunken); border: 1px solid var(--line-soft); font: 12px/1.6 var(--font-mono); color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
 .log .none { padding: 14px 20px; }
 .log-ft { display: flex; justify-content: center; padding: 10px; border-top: 1px solid var(--line-soft); }

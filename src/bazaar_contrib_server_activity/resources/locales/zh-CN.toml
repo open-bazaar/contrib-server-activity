@@ -65,6 +65,7 @@
 "activity.log.omitted" = "输出过大，未上报"
 "activity.log.none" = "还没有记录"
 "activity.log.earlier" = "加载更早的记录"
+"activity.log.latest" = "回到最新"
 "activity.filter.all" = "全部"
 "activity.filter.turns" = "回合"
 "activity.filter.channel" = "渠道"
