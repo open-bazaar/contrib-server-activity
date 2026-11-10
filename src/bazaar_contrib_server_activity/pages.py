@@ -311,11 +311,25 @@ class Views:
         }
 
     async def _log(self, request: Request) -> Response:
-        """The whole record, its first page, as the filter narrows it."""
+        """The whole record, its first page, as the filter narrows it; or,
+        for a turn, the page starting at the turn's newest line, its lines
+        marked, as a conversation opens at a message the search found."""
         agent = await self._agent(request)
         chosen = self._filter(request)
+        turn = request.query_params.get("turn")
+        newest = (
+            None
+            if not turn
+            else await self._store.newest(
+                agent.computer_id, agent.id, FILTERS[chosen], turn
+            )
+        )
         events = await self._store.log(
-            agent.computer_id, agent.id, FILTERS[chosen], limit=PAGE + 1
+            agent.computer_id,
+            agent.id,
+            FILTERS[chosen],
+            before=None if newest is None else newest + 1,
+            limit=PAGE + 1,
         )
         return await self._pages.render(
             request,
@@ -326,6 +340,7 @@ class Views:
             events=events[:PAGE],
             more=len(events) > PAGE,
             day=None,
+            opened=None if newest is None else turn,
             seen=await self._state(agent, await self._running(agent)),
             **await self._lines(agent, events[:PAGE]),
         )
@@ -366,6 +381,7 @@ class Views:
             events=events,
             more=more,
             day=request.query_params.get("day"),
+            opened=request.query_params.get("turn"),
             seen=await self._state(agent, await self._running(agent)),
             **await self._lines(agent, events),
         )

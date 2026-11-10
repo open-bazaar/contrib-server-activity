@@ -292,6 +292,15 @@ async def test_the_activity_reads_as_the_agent_worked(
                 await expect(log.locator(".ev", has_text="TimeoutError")).to_have_count(
                     1
                 )
+                # opened at a turn: its lines marked first, the latest a click away
+                await page.goto(f"{served.url}/ui/activity/log/{short}?turn=turn-m-2")
+                await expect(page.locator(".ev").first).to_have_class(
+                    re.compile(r"\bat\b")
+                )
+                await expect(page.locator(".ev.at")).not_to_have_count(0)
+                await page.locator(".log-at a").click()
+                await expect(page.locator(".ev").first).to_contain_text("新的一条")
+                await expect(page.locator(".ev.at")).to_have_count(0)
 
                 # the agents in the computer's stall, and the market's feed
                 await page.goto(f"{served.url}/")

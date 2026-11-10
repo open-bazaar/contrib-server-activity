@@ -5,6 +5,7 @@ is shared with their role."""
 from __future__ import annotations
 
 lazy import asyncio
+lazy import re
 lazy from typing import Any
 
 import httpx
@@ -93,6 +94,7 @@ async def test_activity_gives_what_the_account_may_see():
                         "tasks": 0,
                     },
                     30,
+                    "turn-m-1",
                 ],
                 "o-2": [
                     {
@@ -105,6 +107,7 @@ async def test_activity_gives_what_the_account_may_see():
                         "tasks": 0,
                     },
                     20,
+                    "turn-m-1",
                 ],
             }
             assert sorted(await probe(served, boss, "working")) == [
@@ -158,3 +161,62 @@ async def test_activity_gives_what_the_account_may_see():
             assert "有马佳奈" in feed and "啊夸" not in feed
             # a new contact is on the feed, a message in a conversation let in is not
             assert "lilei" in feed and "yuchanns" not in feed
+
+
+async def test_the_record_opens_at_a_turn():
+    async with client() as boss, serving() as served:
+        await admin(served, boss)
+        ref, token = await enrol(served, boss, "kana-vm")
+        async with connected(served, token, ref, [KANA]) as computer:
+            kana = await known(served, boss, ref, "有马佳奈")
+            now = now_ms()
+            earlier = turn("kana", "t-dev", "m-1")
+            later = turn("kana", "t-dev", "m-2")
+            await computer.report(
+                received(
+                    computer,
+                    "kana",
+                    "t-dev",
+                    "m-1",
+                    "合一下",
+                    "yuchanns",
+                    group="#dev",
+                    at_ms=now - 60_000,
+                ),
+                requested(computer, earlier, at_ms=now - 60_000),
+                *called(computer, earlier, "c-1", CommandDetail(command="git fetch")),
+                *called(computer, earlier, "c-2", CommandDetail(command="git merge")),
+                replied(computer, earlier, "o-1", "合好了", at_ms=now - 30_000),
+                ended(computer, earlier, at_ms=now - 29_000),
+                received(
+                    computer,
+                    "kana",
+                    "t-dev",
+                    "m-2",
+                    "推上去",
+                    "yuchanns",
+                    group="#dev",
+                    at_ms=now - 20_000,
+                ),
+                requested(computer, later, at_ms=now - 20_000),
+                *called(computer, later, "c-3", CommandDetail(command="git push")),
+                ended(computer, later, at_ms=now - 10_000),
+            )
+            log = f"{served.url}/ui/activity/log/{kana}"
+            async with asyncio.timeout(30):
+                while True:
+                    if "git push" in (await boss.get(log)).text:
+                        break
+                    await asyncio.sleep(0.2)
+
+            opened = (await boss.get(log, params={"turn": "turn-m-1"})).text
+            lines = re.findall(r'<div class="(ev[^"]*)"', opened)
+            # the turn's newest line first, its lines marked, the later turn not there
+            assert lines[0] == "ev at"
+            assert lines.count("ev at") == 5
+            assert "git merge" in opened and "git push" not in opened
+            assert f'href="/ui/activity/log/{kana}?filter=all"' in opened
+            # it stays where it was opened: nothing follows the agent to draw newer lines
+            assert 'id="follow"' not in opened
+            latest = (await boss.get(log)).text
+            assert "git push" in latest and '<div class="ev at"' not in latest
