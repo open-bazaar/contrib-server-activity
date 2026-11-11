@@ -8,6 +8,7 @@
 "activity.failed" = "Failed"
 "activity.running" = "Running"
 "activity.cancelled" = "Cancelled"
+"activity.unknown" = "Outcome unknown"
 "activity.input" = "input"
 "activity.output" = "output"
 "activity.hits" = "cache hits"

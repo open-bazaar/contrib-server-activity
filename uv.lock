@@ -94,7 +94,7 @@ wheels = [
 
 [[package]]
 name = "bazaar-contrib-server"
-version = "0.3.0rc6"
+version = "0.3.0rc10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bazaar-contrib-http" },
@@ -112,9 +112,9 @@ dependencies = [
     { name = "starlette" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9d/34/a818a34d569e21fabee35e2eeb105888e555c7528dae9c121630a55b2058/bazaar_contrib_server-0.3.0rc6.tar.gz", hash = "sha256:bade75e8b62d5a8ef7e7c438c8a41212d047721ee1aa816023bb29ca22e3b32a", size = 482450, upload-time = "2026-11-09T13:51:58.043Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fb/86/e1cd33539602ce4c143af85032c8f3bc00149052c1b13aa26487c886fcd0/bazaar_contrib_server-0.3.0rc10.tar.gz", hash = "sha256:154b5c15740ad41611b5a3e8643182243302a421e735b4c7baf361adbb650fcb", size = 483462, upload-time = "2026-11-11T02:10:58.343Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f9/43/4d40eff31b4d7f1edbf26da5c87d1d9be38a28584f296a2107a1ba2b2fa1/bazaar_contrib_server-0.3.0rc6-py3-none-any.whl", hash = "sha256:0745f85af66c4a0acac5029100cba8fc56c215f8f6e428584e168498fe5fafa4", size = 494687, upload-time = "2026-11-09T13:51:56.754Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/e0/b9c7b545a0c5fe8651c6795c0a4f9eae0f51866c32cf9dbf8e8e7bfc489a/bazaar_contrib_server-0.3.0rc10-py3-none-any.whl", hash = "sha256:00875c31ec99d591b8b1b532b1c5f7b18ccb80fed4af698fa53e8ceeb40456a2", size = 495821, upload-time = "2026-11-11T02:10:57.032Z" },
 ]
 
 [[package]]
@@ -183,7 +183,7 @@ requires-dist = [
     { name = "bazaar-contrib-schema", specifier = "~=0.3.0rc1" },
     { name = "bazaar-contrib-server", specifier = "~=0.3.0rc6" },
     { name = "bazaar-contrib-server-access", specifier = "~=0.3.0rc5" },
-    { name = "bazaar-contrib-server-agent", specifier = "~=0.3.0rc2" },
+    { name = "bazaar-contrib-server-agent", specifier = "~=0.3.0rc8" },
     { name = "bazaar-contrib-server-computer", specifier = "~=0.3.0rc3" },
     { name = "bazaar-contrib-server-database", specifier = "~=0.3.0rc1" },
     { name = "bazaar-contrib-server-migrations", specifier = "~=0.3.0rc3" },
@@ -212,7 +212,7 @@ dev = [
 
 [[package]]
 name = "bazaar-contrib-server-agent"
-version = "0.3.0rc2"
+version = "0.3.0rc8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bazaar-contrib-audit" },
@@ -231,9 +231,9 @@ dependencies = [
     { name = "python-multipart" },
     { name = "starlette" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ce/c3/233390f67c7b2df75e4a86fe4533834a4878629fceab45a43a78a0ffa45a/bazaar_contrib_server_agent-0.3.0rc2.tar.gz", hash = "sha256:515999bf5fd973f5fb9f518183adf6f7a9de64243b4a56ca60641accb6f39801", size = 61370, upload-time = "2026-11-09T09:40:22.236Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/43/d2/fad5d8b8054d114b2b759d3aa8f05a0f11b7e5251980d7a99097a50f5df6/bazaar_contrib_server_agent-0.3.0rc8.tar.gz", hash = "sha256:2ce88ec63a832e2b7b8865b025a6fd8930aafbdb810e0f1ba290c3f3d03a19ec", size = 61662, upload-time = "2026-11-11T03:46:48.523Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1a/11/bcbbf2527dcc01c7de2916c91ffd2d1f837547cbb774e5402ecc6630f419/bazaar_contrib_server_agent-0.3.0rc2-py3-none-any.whl", hash = "sha256:2ddff3f945a707b2d00b60980d5f22c34fd1eabca95c74b92e4c070081565b0d", size = 86476, upload-time = "2026-11-09T09:40:21.18Z" },
+    { url = "https://files.pythonhosted.org/packages/08/d3/1ccc04e87c7f9778b09f6b69932254ec4d4da2092a7850efef4f830bf9b3/bazaar_contrib_server_agent-0.3.0rc8-py3-none-any.whl", hash = "sha256:8fcb2575c3beccf596e36d9c695e5ed2b1b8c50f3b78cc7d41190f5c57b56aa6", size = 86964, upload-time = "2026-11-11T03:46:47.398Z" },
 ]
 
 [[package]]

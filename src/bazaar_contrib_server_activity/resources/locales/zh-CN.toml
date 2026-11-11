@@ -8,6 +8,7 @@
 "activity.failed" = "失败"
 "activity.running" = "进行中"
 "activity.cancelled" = "已取消"
+"activity.unknown" = "结果未知"
 "activity.input" = "输入"
 "activity.output" = "输出"
 "activity.hits" = "缓存命中"

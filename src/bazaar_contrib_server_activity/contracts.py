@@ -58,7 +58,8 @@ class Turn:
     message_id: str | None
     started_ms: int
     ended_ms: int | None
-    outcome: Literal["completed", "failed", "cancelled"] | None
+    # unknown for a turn its computer no longer ran, whose end never came
+    outcome: Literal["completed", "failed", "cancelled", "unknown"] | None
     reason: str | None
     input: int
     cached: int

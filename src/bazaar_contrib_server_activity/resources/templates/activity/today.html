@@ -22,6 +22,7 @@
       <span class="what">{% if reminded %}{{ message.metadata.get("title") or "" }}{% elif message %}{{ message.metadata.get("text") or "" }}{% endif %}</span>
       {% if turn.outcome == "completed" %}<span class="ok">{{ m.icon("circle-check") }}{{ t.text("activity.done") }}</span>
       {% elif turn.outcome == "cancelled" %}<span class="off">{{ t.text("activity.cancelled") }}</span>
+      {% elif turn.outcome == "unknown" %}<span class="off">{{ t.text("activity.unknown") }}</span>
       {% elif turn.outcome %}<span class="bad">{{ m.icon("triangle-alert") }}{{ t.text("activity.failed") }}</span>
       {% else %}<span class="run">{{ t.text("activity.running") }}</span>{% endif %}
       <span class="nums"><span class="dur">{{ ((turn.ended_ms or now_ms) - turn.started_ms) | duration("compact") }}</span><span class="sep"> · </span><span class="tok">{{ (turn.input + turn.cached + turn.output) | tokens }}</span></span>

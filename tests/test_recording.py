@@ -2,12 +2,14 @@
 after the server restarts count once and take no turn back to an earlier
 step, usage is counted from each runtime session's last totals, and what is
 older than the retention, what a computer leaves behind and its departures
-go as they should."""
+go as they should; a turn whose end never came ends once its node runs it
+no more."""
 
 from __future__ import annotations
 
 lazy import asyncio
 lazy from pathlib import Path
+lazy from typing import cast
 
 import aiosqlite
 from bazaar_contrib_harness import CommandDetail, ContentDeltaKind
@@ -261,3 +263,55 @@ async def test_a_computer_leaves_once_and_takes_what_it_reported_when_removed(
                 f"SELECT count(*) > 0 FROM {table} WHERE computer_id = ?",
                 kept_token.partition(":")[0],
             ) == [(1,)]
+
+
+async def test_a_turn_whose_end_never_came_ends_once_its_node_runs_it_no_more(
+    home: Path,
+):
+    async with client() as boss, serving() as served:
+        await admin(served, boss)
+        ref, token = await enrol(served, boss, "kana-vm")
+        # the node runs the second turn; the first one's end was let go of on
+        # its way, a fourth is tried again after the node says what it runs,
+        # and a third ends as it says so
+        async with connected(
+            served, token, ref, [KANA], turns={"kana": ["turn-m-2"]}
+        ) as computer:
+            await known(served, boss, ref, "有马佳奈")
+            lost, running, done, again = (
+                turn("kana", "t-dev", message)
+                for message in ("m-1", "m-2", "m-3", "m-4")
+            )
+            at = now_ms() - 60_000
+            await computer.report(
+                requested(computer, lost, at_ms=at),
+                step(computer, lost, ContentDeltaKind.AGENT_MESSAGE, at_ms=at + 5),
+                requested(computer, running, at_ms=at + 10),
+                requested(computer, done, at_ms=at + 20),
+                requested(computer, again, at_ms=at + 25),
+                requested(computer, again, at_ms=now_ms() + 600_000),
+            )
+            await settled(home, "SELECT count(*) FROM turns", [(4,)])
+            await computer.report(ended(computer, done, at_ms=at + 30))
+            await settled(
+                home,
+                "SELECT turn_id, outcome FROM turns ORDER BY turn_id",
+                [
+                    ("turn-m-1", "unknown"),
+                    ("turn-m-2", None),
+                    ("turn-m-3", "completed"),
+                    ("turn-m-4", None),
+                ],
+            )
+            # over as of its last event
+            [(ended_at,)] = await rows(
+                home, "SELECT ended_at_ms FROM turns WHERE turn_id = 'turn-m-1'"
+            )
+            assert at <= cast(int, ended_at) < at + 10
+            # an end coming after says how it ended
+            await computer.report(ended(computer, lost, at_ms=at + 40))
+            await settled(
+                home,
+                "SELECT outcome FROM turns WHERE turn_id = 'turn-m-1'",
+                [("completed",)],
+            )
