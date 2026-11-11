@@ -73,12 +73,20 @@ def agent(
 
 
 def activity(
-    agents: Sequence[dict[str, Any]], working: dict[str, int]
+    agents: Sequence[dict[str, Any]],
+    working: dict[str, int],
+    turns: dict[str, list[str]] | None,
 ) -> dict[str, Any]:
     """How agent-activity says the agents are: running, and at work since
-    when for those given."""
+    when for those given; with the turns they run and when it said so, as
+    nodes from bazaar-compute 0.3.0rc28 say, when given."""
     return {
         one["id"]: {
+            **(
+                {}
+                if turns is None
+                else {"turns": turns.get(one["id"], []), "said_at_ms": now_ms()}
+            ),
             "state": "running",
             "reason": None,
             "usage": {"input": 0, "output": 0, "cached": 0, "cost": None},
@@ -176,7 +184,10 @@ class Node:
 
 
 async def _answer(
-    session: httpx.AsyncClient, agents: list[dict[str, Any]], working: dict[str, int]
+    session: httpx.AsyncClient,
+    agents: list[dict[str, Any]],
+    working: dict[str, int],
+    turns: dict[str, list[str]] | None,
 ) -> None:
     """What the server asks the computer, answered as its node would."""
     after = 0
@@ -192,7 +203,7 @@ async def _answer(
                     "value": {"revision": "1", "agents": agents},
                 }
             elif asked == ("agent-activity", "agents"):
-                answer = {"kind": "result", "value": activity(agents, working)}
+                answer = {"kind": "result", "value": activity(agents, working, turns)}
             else:
                 answer = {"kind": "error", "type": "LookupError", "message": "absent"}
             await session.put(f"/announce/{call['number']}", json=answer)
@@ -219,9 +230,10 @@ async def connected(
     ref: str,
     agents: list[dict[str, Any]],
     working: dict[str, int] | None = None,
+    turns: dict[str, list[str]] | None = None,
 ) -> AsyncIterator[Node]:
     """The computer of the token connected, its node answering until it
-    stops; the agents given at work since then."""
+    stops; the agents given at work since then, and running the turns given."""
     async with await asyncio.to_thread(
         lambda: httpx.AsyncClient(
             base_url=f"{served.url}/starlink/v1",
@@ -229,7 +241,7 @@ async def connected(
             timeout=90,
         )
     ) as session:
-        listening = asyncio.create_task(_answer(session, agents, working or {}))
+        listening = asyncio.create_task(_answer(session, agents, working or {}, turns))
         try:
             yield Node(ref, token.partition(":")[0], session)
         finally:

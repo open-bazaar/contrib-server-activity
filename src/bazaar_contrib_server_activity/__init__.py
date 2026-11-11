@@ -14,7 +14,13 @@ lazy from pathlib import Path
 
 from bazaar_contrib_server import SERVER, Topic
 from bazaar_contrib_server_access import ACCESS
-from bazaar_contrib_server_agent import AGENTS, AgentSection, AgentTab
+from bazaar_contrib_server_agent import (
+    AGENTS,
+    AGENTS_SAID,
+    AgentSection,
+    AgentsSaid,
+    AgentTab,
+)
 from bazaar_contrib_server_computer import (
     COMPUTER_LEFT,
     COMPUTER_REMOVED,
@@ -185,6 +191,14 @@ async def _left(ctx: Context, value: ComputerLeft) -> None:
     await ctx.accept(_LEDGER).depart(value.computer_id, value.seen_ms)
 
 
+async def _said(ctx: Context, value: AgentsSaid) -> None:
+    for agent_id, said in value.agents.items():
+        if said.turns is not None and said.said_at_ms is not None:
+            await ctx.accept(_LEDGER).ended(
+                value.computer_id, agent_id, said.turns, said.said_at_ms
+            )
+
+
 activity = Contrib(
     config=ActivityConfig,
     accepts=[
@@ -204,5 +218,6 @@ activity = Contrib(
         REPORTED: _reported,
         COMPUTER_REMOVED: _removed,
         COMPUTER_LEFT: _left,
+        AGENTS_SAID: _said,
     },
 )

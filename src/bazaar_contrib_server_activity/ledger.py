@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 lazy import json
+lazy from collections.abc import Sequence
 lazy from time import time_ns
 lazy from typing import cast
 
@@ -41,6 +42,7 @@ lazy from bazaar_contrib_storage import (
     Database,
     Delete,
     Expression,
+    In,
     Insert,
     IsNull,
     Predicate,
@@ -570,6 +572,61 @@ class Ledger:
                 right=Value(value=grown.cost),
             )
         await session.update(Update(table="turns", values=added, where=turn))
+
+    async def ended(
+        self, computer_id: str, agent_id: str, turns: Sequence[str], said_at_ms: int
+    ) -> None:
+        """The agent's turns its computer no longer ran when it said so, whose
+        end never came and that said nothing after: over as of their last
+        event, how unknown. A turn tried again since, under the same id, is
+        left running; an end that comes after says how they ended."""
+        last = Subquery(
+            query=Select(
+                table="events",
+                columns={
+                    "at": Call(name="max", arguments=(Column(name="created_at_ms"),))
+                },
+                where=All(
+                    conditions=(
+                        equals("computer_id", computer_id, "events"),
+                        Compare(
+                            left=Column(name="agent_id", table="events"),
+                            operator="=",
+                            right=Column(name="agent_id", table="turns"),
+                        ),
+                        Compare(
+                            left=Column(name="turn_id", table="events"),
+                            operator="=",
+                            right=Column(name="turn_id", table="turns"),
+                        ),
+                    )
+                ),
+            )
+        )
+        ended = Call(name="coalesce", arguments=(last, Column(name="started_at_ms")))
+        await self._database.transaction(
+            lambda session: session.update(
+                Update(
+                    table="turns",
+                    values={"ended_at_ms": ended, "outcome": Value(value="unknown")},
+                    where=All(
+                        conditions=(
+                            equals("computer_id", computer_id),
+                            equals("agent_id", agent_id),
+                            IsNull(expression=Column(name="ended_at_ms")),
+                            Compare(
+                                left=ended, operator="<", right=Value(value=said_at_ms)
+                            ),
+                            In(
+                                expression=Column(name="turn_id"),
+                                values=tuple(turns),
+                                exclude=True,
+                            ),
+                        )
+                    ),
+                )
+            )
+        )
 
     async def depart(self, computer_id: str, seen_ms: int) -> None:
         """The computer left after it was last here; each replica may say so."""
