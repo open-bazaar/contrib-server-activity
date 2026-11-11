@@ -257,7 +257,7 @@ async def test_the_activity_reads_as_the_agent_worked(
                 await expect(log.locator(".ev")).to_have_count(50)
                 await expect(log.locator(".lday")).to_have_count(2)
                 # the rest of the record, yesterday's day going on under its heading
-                await log.locator(".log-ft button").click()
+                await log.locator(".log-ft").scroll_into_view_if_needed()
                 await expect(log.locator(".log-ft")).to_have_count(0)
                 assert await log.locator(".ev").count() > 50
                 await expect(log.locator(".lday")).to_have_count(2)

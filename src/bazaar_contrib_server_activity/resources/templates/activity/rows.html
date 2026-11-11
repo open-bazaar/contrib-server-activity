@@ -73,4 +73,4 @@
 {% else %}
 {% if day is none %}<p class="none">{{ t.text("activity.log.none") }}</p>{% endif %}
 {% endfor %}
-{% if more %}<div class="log-ft"><button class="btn sm" type="button" hx-get="/ui/activity/log/{{ short }}/rows?filter={{ chosen }}&before={{ oldest }}&day={{ kept.day | urlencode }}{% if opened %}&turn={{ opened | urlencode }}{% endif %}" hx-target="closest .log-ft" hx-swap="outerHTML">{{ t.text("activity.log.earlier") }}</button></div>{% endif %}
+{% if more %}<div class="log-ft paging" hx-get="/ui/activity/log/{{ short }}/rows?filter={{ chosen }}&before={{ oldest }}&day={{ kept.day | urlencode }}{% if opened %}&turn={{ opened | urlencode }}{% endif %}" hx-trigger="intersect once" hx-swap="outerHTML"><span class="spin"></span>{{ t.text("activity.log.loading") }}</div>{% endif %}
