@@ -12,7 +12,7 @@
 {% set turn = turns.get((agent.id, event.turn_id)) %}
 {% set when = event.at_ms | dated %}
 {% if when != kept.day %}<div class="lday">{{ when }}</div>{% set kept.day = when %}{% endif %}
-<div class="ev{% if event.name in failures %} bad{% endif %}{% if opened and event.turn_id == opened %} at{% endif %}" x-data="{ open: false }">
+<div class="ev{% if event.name in failures %} bad{% endif %}{% if opened and event.turn_id == opened %} at{% endif %}" data-id="{{ event.id }}" x-data="{ open: false }">
   <span class="tm">{{ (event.at_ms | time)[:5] }}</span>
   <span class="src {{ source }}">{{ t.text("activity.source." ~ source) }}</span>
   {% if event.name in ("harness.turn.requested", "runtime.request.turn.started") %}

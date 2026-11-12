@@ -24,6 +24,8 @@ code { font: 12px var(--font-mono); color: var(--text); background: var(--sunken
 .quote b { margin-right: 6px; color: var(--text); font-weight: 600; }
 .quote .ic { display: inline-grid; color: var(--plum); }
 .quote .ic svg { width: 16px; height: 16px; }
+/* eight steps at the most, the rest a scroll away within the card */
+.trail { max-height: 254px; overflow-y: auto; overscroll-behavior: contain; }
 .steps { position: relative; padding: 8px 16px 6px 22px; }
 .steps:not(:has(.step)) { display: none; }
 .steps::before { content: ""; position: absolute; left: 30px; top: 16px; bottom: 22px; width: 1px; background: var(--line); }
