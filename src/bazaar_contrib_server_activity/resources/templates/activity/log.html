@@ -3,7 +3,7 @@
 {% set short = ref(agent.id) %}
 {% block title %}{{ t.text("activity.log.title") }}{% endblock %}
 {% block top %}{% endblock %}
-{% block head %}<link rel="stylesheet" href="{{ asset('activity.css') }}">{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('activity.css') }}"><script src="{{ asset('activity.js') }}"></script>{% endblock %}
 {% block body %}
 {# the whole record under the activity, newest first and a day at a time: what the agent, its channels, its runtimes and its reminders did; narrowed by what a line is, on a phone by the chips above it #}
 {% macro narrowing(on) %}{% for key in filters %}<a class="{{ on }}{% if key == chosen %} on{% endif %}" href="/ui/activity/log/{{ short }}?filter={{ key }}">{{ t.text("activity.filter." ~ key) }}</a>{% endfor %}{% endmacro %}

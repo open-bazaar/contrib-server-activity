@@ -22,21 +22,23 @@
     {% set who = m.sender(message) %}
     <div class="quote"><div class="av xs {{ who | tint }}">{{ who[:1] | upper }}</div><div><b>{{ who }}</b>{{ message.metadata.get("text") or "" }}</div></div>
     {% endif %}
-    <div class="steps">
-      {% for step in steps.get(turn.turn_id, []) %}
-      <div class="step{% if not step.ended %} now{% elif step.failed %} bad{% endif %}">
-        <span class="k">{{ m.icon("check" if step.ended and not step.failed else "triangle-alert" if step.failed else "terminal") }}</span>
-        <span class="sx"><span class="w">{{ m.call(step.call) }}</span> <small>{{ m.about(step.call) }}{% if step.failed and step.error %} {{ step.error }}{% endif %}</small></span>
-        <span class="d">{% if not step.ended %}<span data-since="{{ step.at_ms }}">{{ (now_ms - step.at_ms) | duration("timer") }}</span>{% elif step.call.duration_ms is not none %}{{ step.call.duration_ms | duration("compact") }}{% endif %}</span>
+    <div class="trail" data-turn="{{ turn.turn_id }}">
+      <div class="steps">
+        {% for step in steps.get(turn.turn_id, []) %}
+        <div class="step{% if not step.ended %} now{% elif step.failed %} bad{% endif %}">
+          <span class="k">{{ m.icon("check" if step.ended and not step.failed else "triangle-alert" if step.failed else "terminal") }}</span>
+          <span class="sx"><span class="w">{{ m.call(step.call) }}</span> <small>{{ m.about(step.call) }}{% if step.failed and step.error %} {{ step.error }}{% endif %}</small></span>
+          <span class="d">{% if not step.ended %}<span data-since="{{ step.at_ms }}">{{ (now_ms - step.at_ms) | duration("timer") }}</span>{% elif step.call.duration_ms is not none %}{{ step.call.duration_ms | duration("compact") }}{% endif %}</span>
+        </div>
+        {% endfor %}
+        {% if turn.step in ("reply", "thinking") %}
+        <div class="step now">
+          <span class="k">{{ m.icon("sparkles") }}</span>
+          <span class="sx">{{ t.text("activity.live." ~ turn.step) }}</span>
+          <span class="d"><span data-since="{{ turn.step_ms }}">{{ (now_ms - turn.step_ms) | duration("timer") }}</span></span>
+        </div>
+        {% endif %}
       </div>
-      {% endfor %}
-      {% if turn.step in ("reply", "thinking") %}
-      <div class="step now">
-        <span class="k">{{ m.icon("sparkles") }}</span>
-        <span class="sx">{{ t.text("activity.live." ~ turn.step) }}</span>
-        <span class="d"><span data-since="{{ turn.step_ms }}">{{ (now_ms - turn.step_ms) | duration("timer") }}</span></span>
-      </div>
-      {% endif %}
     </div>
     <div class="turn-ft">
       <span class="wide-only">{{ t.text("activity.live.this_turn") }} <b>{{ (turn.input + turn.cached) | tokens }}</b> {{ t.text("activity.input") }}</span>

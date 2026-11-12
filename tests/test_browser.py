@@ -302,6 +302,63 @@ async def test_the_activity_reads_as_the_agent_worked(
                 await expect(page.locator(".ev").first).to_contain_text("新的一条")
                 await expect(page.locator(".ev.at")).to_have_count(0)
 
+                # a reader further down keeps the line they were at
+                await page.goto(f"{served.url}/agents/{short}?tab=log")
+                ongoing = turn("agent-1", "thread-1", "m-live", session="s-live")
+                line = log.locator(".ev", has_text="看看 opendal")
+                await line.evaluate("(row) => row.scrollIntoView()")
+                was = await line.bounding_box()
+                for n in range(3):
+                    await node.report(
+                        *called(
+                            node,
+                            ongoing,
+                            f"l-{7 + n}",
+                            FileDetail(action="read", path=f"later/{n}.md"),
+                            duration_ms=5,
+                        )
+                    )
+                    await expect(log.locator(".ev").first).to_contain_text(
+                        f"later/{n}.md"
+                    )
+                now_at = await line.bounding_box()
+                assert was and now_at and abs(now_at["y"] - was["y"]) < 1, (was, now_at)
+
+                # more steps than the card holds scroll within it, the newest
+                # in view, and stay where the reader scrolled them
+                await page.goto(f"{served.url}/agents/{short}")
+                for n in range(2):
+                    await node.report(
+                        *called(
+                            node,
+                            ongoing,
+                            f"l-{10 + n}",
+                            FileDetail(action="read", path=f"docs/{n}.md"),
+                            duration_ms=5,
+                        )
+                    )
+                await expect(live.locator(".step", has_text="docs/1.md")).to_have_count(
+                    1
+                )
+                await expect(live.locator(".step").last).to_be_in_viewport()
+                await expect(live.locator(".step").first).not_to_be_in_viewport()
+                await live.locator(".trail").evaluate(
+                    "(trail) => { trail.scrollTop = 0; }"
+                )
+                await node.report(
+                    *called(
+                        node,
+                        ongoing,
+                        "l-12",
+                        FileDetail(action="read", path="docs/2.md"),
+                        duration_ms=5,
+                    )
+                )
+                await expect(live.locator(".step", has_text="docs/2.md")).to_have_count(
+                    1
+                )
+                await expect(live.locator(".step").first).to_be_in_viewport()
+
                 # the agents in the computer's stall, and the market's feed
                 await page.goto(f"{served.url}/")
                 board = page.frame_locator("iframe.frame")
