@@ -52,6 +52,8 @@ SOURCES = {
     "harness.tool.completed": "runtime",
     "harness.tool.failed": "runtime",
     "harness.pool.banned": "runtime",
+    "harness.compaction.started": "runtime",
+    "harness.compaction.completed": "runtime",
     "tool_call.completed": "runtime",
     "tool_call.failed": "runtime",
     "reminder.fired": "reminder",

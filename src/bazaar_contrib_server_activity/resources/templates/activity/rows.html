@@ -65,6 +65,9 @@
   {% set fallback = event.payload.get("fallback") %}
   <span class="w">{{ m.icon("triangle-alert") }}{{ t.text("activity.log.banned_to" if fallback else "activity.log.banned", {"from": models.get(banned) or banned or "—", "to": models.get(fallback) or fallback}) }}</span>
   <span class="d">{{ m.conversation(named) }}</span><span class="mt"></span>
+  {% elif event.name in ("harness.compaction.started", "harness.compaction.completed") %}
+  <span class="w">{{ t.text("activity.log.compaction_started" if event.name.endswith(".started") else "activity.log.compaction_completed") }}</span>
+  <span class="d"></span><span class="mt"></span>
   {% elif event.name == "reminder.fired" %}
   <span class="w">{{ t.text("activity.reminder") }}<span class="wide-only"> · {{ event.metadata.get("title") or "" }}</span></span>
   <span class="d"><span class="narrow-only">{{ event.metadata.get("title") or "" }} · </span>{{ m.conversation(named) }}</span><span class="mt"></span>
