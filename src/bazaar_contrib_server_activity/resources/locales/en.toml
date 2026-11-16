@@ -48,6 +48,8 @@
 "activity.log.completed" = "Turn done"
 "activity.log.failed" = "Turn failed"
 "activity.log.cancelled" = "Turn cancelled"
+"activity.log.compaction_started" = "Context compaction started"
+"activity.log.compaction_completed" = "Context compaction completed"
 "activity.log.tools" = "{{ n }} tool calls"
 "activity.log.received" = "Message from"
 "activity.log.in" = "in"
