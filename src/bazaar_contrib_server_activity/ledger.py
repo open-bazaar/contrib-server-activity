@@ -222,7 +222,9 @@ class Ledger:
                 equals("turn_id", context.turn_id),
             )
         )
-        if name in STREAMED or name.startswith("harness.source."):
+        if name in STREAMED or (
+            name.startswith("harness.source.") and name != "harness.source.stderr"
+        ):
             if name != "harness.content.delta" or context.turn_id is None:
                 return
             delta = cast(ContentDelta, HARNESS.validate_python(event.payload).payload)

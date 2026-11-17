@@ -40,6 +40,7 @@ testpaths = ["tests"]
 addopts = "-p no:anyio"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+markers = ["e2e: requires audit journals captured from real provider CLI runs"]
 
 [tool.pyright]
 include = ["src", "tests", "scripts"]
