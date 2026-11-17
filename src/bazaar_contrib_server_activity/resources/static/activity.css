@@ -21,6 +21,7 @@ code { font: 12px var(--font-mono); color: var(--text); background: var(--sunken
 .turn-hd .clock { margin-left: auto; display: flex; align-items: center; gap: 6px; font: 600 13px/20px var(--font-mono); color: var(--saffron); }
 .turn-hd .clock svg { width: 14px; height: 14px; }
 .quote { margin: 6px 16px 4px; padding: 10px 12px; border-radius: var(--r-md); background: var(--sunken); border: 1px solid var(--line-soft); display: flex; align-items: center; gap: 10px; font-size: 13px; line-height: 20px; color: var(--text-2); }
+.quote > :last-child { min-width: 0; overflow-wrap: anywhere; }
 .quote b { margin-right: 6px; color: var(--text); font-weight: 600; }
 .quote .ic { display: inline-grid; color: var(--plum); }
 .quote .ic svg { width: 16px; height: 16px; }
